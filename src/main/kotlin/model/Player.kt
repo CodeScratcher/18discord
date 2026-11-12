@@ -9,7 +9,7 @@ class Player(val uuid: UUID, val username: String, var wealth: Int, val gameStat
 
             if (wealth >= offering.price) {
                 wealth -= offering.price
-                offering.share.player = this;
+                offering.share.player = this
                 gameState.shares.offering.remove(id)
             }
         }
@@ -43,7 +43,7 @@ class Player(val uuid: UUID, val username: String, var wealth: Int, val gameStat
     override fun equals(other: Any?): Boolean {
         return when (other) {
             is Player -> uuid == other.uuid
-            else -> false;
+            else -> false
         }
     }
 

@@ -70,7 +70,7 @@ class Company(val mark: String, val name: String, var funds: Int, val gameState:
 
     fun makeLine(edges: MutableList<Edge>, trains: MutableList<Train>) {
         for (edge in edges) {
-            edge.source.stops++;
+            edge.source.stops++
         }
         lines.add(RailwayLine(edges, trains))
     }
@@ -84,7 +84,7 @@ class Company(val mark: String, val name: String, var funds: Int, val gameState:
 
     fun profit(amount: Int) {
         funds += amount / 10 * 9
-        val companyShares = gameState.shares.shares.values.filter { (company, player) -> equals(company) }
+        val companyShares = gameState.shares.shares.values.filter { (company, _) -> equals(company) }
         for (share in companyShares) {
             share.player.wealth += amount / 10 / companyShares.size
         }
