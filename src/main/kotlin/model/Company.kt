@@ -22,6 +22,7 @@ class Company(val mark: String, val name: String, var funds: Int, val gameState:
     fun buyEdge(edgeId: String): Boolean {
         if (edgeId in gameState.map.edges) {
             val edge = gameState.map.edges[edgeId]!!
+            if (edge in purchasedEdges || edge in lines.flatMap { it.edges }) return false
             if (funds >= floor(edge.difficulty * COST)) {
                 purchasedEdges += edge
                 edge.difficulty *= 1.2f
