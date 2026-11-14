@@ -1,9 +1,10 @@
 plugins {
     id 'org.jetbrains.kotlin.jvm' version '2.3.10'
+    id 'application'
 }
 
-group = 'org.example'
-version = '1.0-SNAPSHOT'
+group = 'org.rhythmsystem'
+version = '0.1-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -21,4 +22,9 @@ kotlin {
 
 test {
     useJUnitPlatform()
+}
+
+
+application {
+    mainClass = 'bot.MainKt'
 }
