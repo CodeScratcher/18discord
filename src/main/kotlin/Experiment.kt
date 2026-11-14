@@ -6,9 +6,9 @@ import java.util.UUID
 
 val shareRegistry = ShareRegistry(HashMap(), HashMap(), HashMap())
 val map = BoardMap(ArrayList(), HashMap())
-val gameState = GameState(ArrayList(), ArrayList(), shareRegistry, map, HashMap())
-val player1 = Player(UUID.randomUUID(), "skiscratcher", 100, gameState)
-val player2 = Player(UUID.randomUUID(), "moon483", 100, gameState)
+val gameState = GameState(HashMap(), HashMap(), shareRegistry, map, HashMap())
+val player1 = Player("ASDFASDF", "skiscratcher", 100, gameState)
+val player2 = Player("asdfkjhahsjdhgfak", "moon483", 100, gameState)
 
 fun main() {
     player1.openCompany("B&O", "Baltimore & Ohio", 20)

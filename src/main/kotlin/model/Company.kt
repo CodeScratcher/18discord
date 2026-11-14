@@ -6,6 +6,8 @@ class Company(val mark: String, val name: String, var funds: Int, val gameState:
     val purchasedEdges: MutableList<Edge> = ArrayList()
     val lines: MutableList<RailwayLine> = ArrayList()
     val trains: MutableList<Train> = ArrayList()
+    var lastRecordedProfit = 0
+    var lastPayout = 0
 
     fun createIpo(player: Player, price: Int) {
         player.wealth -= 2 * price
@@ -75,11 +77,13 @@ class Company(val mark: String, val name: String, var funds: Int, val gameState:
         lines.add(RailwayLine(edges, trains))
     }
 
-    fun buyTrain(train: Train) {
-        if (train in gameState.trainMarket && train.cost > funds && gameState.trainMarket[train]!! > 0) {
+    fun buyTrain(train: Train): Boolean {
+        if (train.cost > funds && gameState.trainMarket[train.name]!!.remaining > 0) {
             funds -= train.cost
-            gameState.trainMarket[train] = gameState.trainMarket[train]!! - 1
+            gameState.trainMarket[train.name]!!.remaining - 1
+            return true
         }
+        return false
     }
 
     fun profit(amount: Int) {
@@ -87,7 +91,10 @@ class Company(val mark: String, val name: String, var funds: Int, val gameState:
         val companyShares = gameState.shares.shares.values.filter { (company, _) -> equals(company) }
         for (share in companyShares) {
             share.player.wealth += amount / 10 / companyShares.size
+            lastPayout = amount / 10 / companyShares.size
         }
+
+        lastRecordedProfit = amount
     }
 
     override fun equals(other: Any?): Boolean {

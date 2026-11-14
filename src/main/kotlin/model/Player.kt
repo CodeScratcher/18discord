@@ -1,16 +1,16 @@
 package model
 
-import java.util.UUID
-
-class Player(val uuid: UUID, val username: String, var wealth: Int, val gameState: GameState) {
-    fun buyShare(id: String) {
+class Player(val uuid: String, val username: String, var wealth: Int, val gameState: GameState) {
+    fun buyShare(id: String): Boolean {
         if (id in gameState.shares.offering) {
             val offering = gameState.shares.offering[id]!!
 
             if (wealth >= offering.price) {
                 wealth -= offering.price
+                offering.share.player.wealth += offering.price
                 offering.share.player = this
                 gameState.shares.offering.remove(id)
+                return true
             }
         }
         else if (id in gameState.shares.IPO) {
@@ -21,8 +21,11 @@ class Player(val uuid: UUID, val username: String, var wealth: Int, val gameStat
                 gameState.shares.IPO.remove(id)
                 gameState.shares.shares[id] = Share(ipo.company, this)
                 ipo.company.funds += ipo.price
+                return true
             }
         }
+
+        return false
     }
 
     fun sellShare(id: String, price: Int) {
@@ -31,13 +34,15 @@ class Player(val uuid: UUID, val username: String, var wealth: Int, val gameStat
         }
     }
 
-    fun openCompany(mark: String, name: String, price: Int) {
-        if (wealth >= price * 2) {
+    fun openCompany(mark: String, name: String, price: Int): Boolean {
+        if (wealth >= price * 2 && mark !in gameState.companies) {
+            wealth -= price * 2
             val company = Company(mark, name, price * 2, gameState)
             company.createIpo(this, price)
-            gameState.companies.add(company)
+            gameState.companies[mark] = company
+            return true
         }
-
+        return false
     }
 
     override fun equals(other: Any?): Boolean {
