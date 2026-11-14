@@ -1,17 +1,22 @@
 package bot
 
 import model.BoardMap
+import model.COST
 import model.GameState
 import model.Player
 import model.ShareRegistry
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.components.actionrow.ActionRow
 import net.dv8tion.jda.api.components.buttons.Button
+import net.dv8tion.jda.api.components.checkboxgroup.CheckboxGroup
+import net.dv8tion.jda.api.components.label.Label
 import net.dv8tion.jda.api.entities.UserSnowflake
+import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
+import net.dv8tion.jda.api.modals.Modal
 import java.util.EnumSet
 import java.util.UUID
 import kotlin.uuid.Uuid
@@ -163,31 +168,110 @@ class CommandListener : ListenerAdapter() {
             }
 
             "vote" -> {
-                event.deferReply(true).queue()
                 when (event.subcommandName) {
                     "buytrain" -> {
+                        event.deferReply(true).queue()
                         val game = games[event.guild!!.id]!!
                         val company = game.state.companies[event.getOption("company")!!.asString]
-                        if (company != null && event.getOption("train")!!.asString in
-                            game.state.trainMarket.keys
-                        ) {
+                        val train = event.getOption("train")!!.asString
+
+                        if (company != null && train in game.state.trainMarket.keys) {
                             val name = UUID.randomUUID().toString()
                             val channel = game.companyChannels[company]!!
 
                             event.hook.sendMessage("Vote being called").queue()
-                            channel.sendMessage("Buy train?").addComponents(
+                            channel.sendMessage("Buy train: $train?").addComponents(
                                 ActionRow.of(
                                     Button.primary("y!$name", "Yes"),
                                     Button.danger("n!$name", "No")
                                 )
                             ).queue { m -> game.votes[name] =
-                                Vote.BuyTrain(company, 0, event.getOption("train")!!.asString, m)
+                                Vote.BuyTrain(company, 0, train, m)
                             }
                         } else {
                             event.hook.sendMessage("Train or company doesn't exist").queue()
                         }
                     }
+                    "buyrail" -> {
+                        event.deferReply(true).queue()
+                        val game = games[event.guild!!.id]!!
+                        val company = game.state.companies[event.getOption("company")!!.asString]
+                        val edge = event.getOption("rail")!!.asString
+
+                        if (company != null && edge in game.state.map.edges) {
+                            val name = UUID.randomUUID().toString()
+                            val channel = game.companyChannels[company]!!
+
+                            event.hook.sendMessage("Vote being called").queue()
+                            channel.sendMessage("Buy rail: $edge?").addComponents(
+                                ActionRow.of(
+                                    Button.primary("y!$name", "Yes"),
+                                    Button.danger("n!$name", "No")
+                                )
+                            ).queue { m -> game.votes[name] = Vote.BuyRail(company, 0, edge, m)}
+                        } else {
+                            event.hook.sendMessage("Rail or company doesn't exist").queue()
+                        }
+                    }
+                    "line" -> {
+                        val game = games[event.guild!!.id]!!
+                        val company = game.state.companies[event.getOption("company")!!.asString]
+                        if (company != null && company.purchasedEdges.isNotEmpty() && company.trains.isNotEmpty()) {
+                            val edges = CheckboxGroup.create("edges").setMinValues(1).setMaxValues(10)
+                            company.purchasedEdges.take(10).forEach { edge ->
+                                val name = "${edge.source.name}->${edge.dest.name}"
+                                println(name)
+                                edges.addOption(name, name)
+                            }
+                            val edgesBuilt = edges.build()
+
+                            val trains = CheckboxGroup.create("trains").setMinValues(1).setMaxValues(10)
+                            company.trains.take(10).forEach { train ->
+                                trains.addOption(train.name, train.name)
+                            }
+                            val trainsBuilt = trains.build()
+
+                            val modal = Modal.create("lineVote-${company.mark}-${UUID.randomUUID()}", "Vote to open a line")
+                                .addComponents(Label.of("Rails to form the line", edgesBuilt),
+                                    Label.of("Trains to run on the line", trainsBuilt))
+                                .build()
+                            event.replyModal(modal).queue();
+                        } else {
+                            event.reply(
+                                "Company doesn't exist or doesn't have enough to run a line").queue()
+                        }
+
+                    }
                 }
+            }
+
+            "trains" -> {
+                event.deferReply().queue()
+
+                val game = games[event.guild!!.id]!!
+                val str = StringBuilder("# Trains:")
+                for ((name, train) in game.state.trainMarket) {
+                    str.append("\n$name: costs $${train.train.cost}, capacity ${train.train.capacity}, ${train.remaining} remaining")
+                }
+
+                event.hook.sendMessage(str.toString()).queue()
+            }
+
+            "map" -> {
+                event.deferReply().queue()
+                val game = games[event.guild!!.id]!!
+                val str = StringBuilder("# Locales:")
+                for (node in game.state.map.nodes) {
+                    str.append("\n\t${node.name}: Population Points ${node.population}, Destination x${node.destFavorability}\n")
+                    str.append("\tStations of ${node.stops} lines here")
+                }
+                event.hook.sendMessage(str.toString()).queue()
+                str.clear()
+                str.append("# Potential Rails:")
+                for ((edgeName, edge) in game.state.map.edges) {
+                    str.append("\n\t$edgeName: costs $${(edge.difficulty * COST).toInt()}")
+                }
+                event.hook.sendMessage(str.toString()).queue()
             }
 
             else -> {
@@ -219,12 +303,12 @@ class CommandListener : ListenerAdapter() {
             }.distinct()).queue()
         }
 
-        if (event.name == "vote" && event.focusedOption.name == "edge") {
+        if (event.name == "vote" && event.focusedOption.name == "rail") {
             val gameState = games[event.guild!!.id]!!.state
             val edges = gameState.map.edges;
             event.replyChoiceStrings(edges.keys.filter {
                 it.startsWith(event.focusedOption.value)
-            }.distinct()).queue()
+            }.take(25)).queue()
         }
 
         if (event.name == "vote" && event.focusedOption.name == "train") {
@@ -232,7 +316,7 @@ class CommandListener : ListenerAdapter() {
             val train = gameState.trainMarket.keys
             event.replyChoiceStrings(train.filter {
                 it.startsWith(event.focusedOption.value)
-            }.distinct()).queue()
+            }).queue()
         }
     }
 
@@ -249,6 +333,40 @@ class CommandListener : ListenerAdapter() {
         else {
             event.reply("This vote is unavailable").setEphemeral(true).queue()
         }
+    }
 
+    override fun onModalInteraction(event: ModalInteractionEvent) {
+        event.deferReply(true).queue()
+        val edges = event.getValue("edges")!!.asStringList
+        val trains = event.getValue("trains")!!.asStringList
+
+        val companyName = event.modalId.split("-")[1]
+        val game = games[event.guild!!.id]!!
+        val company = game.state.companies[companyName]
+
+        if (edges.isNotEmpty() && !company!!.validateLine(edges.map { game.state.map.edges[it]!! })) {
+            event.hook.sendMessage("This is not a valid line").queue()
+        }
+
+        else if (company != null && edges.isNotEmpty() && trains.isNotEmpty()) {
+            val name = UUID.randomUUID().toString()
+            val channel = game.companyChannels[company]!!
+
+            event.hook.sendMessage("Vote being called").queue()
+            channel.sendMessage(
+                "Start operating a line? \n Edges:\n ${edges.joinToString("\n")} \n Trains:\n${trains.joinToString("\n")}"
+            ).addComponents(
+                ActionRow.of(
+                    Button.primary("y!$name", "Yes"),
+                    Button.danger("n!$name", "No")
+                )
+            ).queue { m ->
+                game.votes[name] =
+                    Vote.MakeLine(company, 0, edges, trains, m)
+            }
+        }
+        else {
+            event.hook.sendMessage("Vote failed to be called. This should be unreachable").queue()
+        }
     }
 }

@@ -1,5 +1,6 @@
 package model
 
+import kotlin.math.ceil
 import kotlin.math.floor
 
 class Company(val mark: String, val name: String, var funds: Int, val gameState: GameState) {
@@ -10,7 +11,6 @@ class Company(val mark: String, val name: String, var funds: Int, val gameState:
     var lastPayout = 0
 
     fun createIpo(player: Player, price: Int) {
-        player.wealth -= 2 * price
         gameState.shares.shares["$mark-1"] = Share(this, player)
         gameState.shares.shares["$mark-2"] = Share(this, player)
 
@@ -19,15 +19,18 @@ class Company(val mark: String, val name: String, var funds: Int, val gameState:
         }
     }
 
-    fun buyEdge(edgeId: String) {
+    fun buyEdge(edgeId: String): Boolean {
         if (edgeId in gameState.map.edges) {
             val edge = gameState.map.edges[edgeId]!!
             if (funds >= floor(edge.difficulty * COST)) {
                 purchasedEdges += edge
                 edge.difficulty *= 1.2f
                 funds -= floor(edge.difficulty * COST).toInt()
+                return true
             }
         }
+
+        return false
     }
 
     fun validateLine(edges: List<Edge>): Boolean {
@@ -49,9 +52,11 @@ class Company(val mark: String, val name: String, var funds: Int, val gameState:
                 edgeChecker[dest] = Pair(edgeChecker[source]!!.first, true)
             }
             else {
-                edgeChecker[source] = Pair(true, false)
+                edgeChecker[dest] = Pair(false, true)
             }
         }
+
+        println(edgeChecker)
 
         var hasSource = false
         var hasDest = false
@@ -70,28 +75,35 @@ class Company(val mark: String, val name: String, var funds: Int, val gameState:
         return true
     }
 
-    fun makeLine(edges: MutableList<Edge>, trains: MutableList<Train>) {
+    fun makeLine(edges: List<Edge>, trains: List<Train>): Boolean {
+        if (edges.any { it !in purchasedEdges} || trains.any { it !in trains } || !validateLine(edges))
+            return false
         for (edge in edges) {
             edge.source.stops++
+            purchasedEdges.remove(edge)
         }
+
+        for (train in trains) this.trains.remove(train)
+
         lines.add(RailwayLine(edges, trains))
+        return true
     }
 
     fun buyTrain(train: Train): Boolean {
-        if (train.cost > funds && gameState.trainMarket[train.name]!!.remaining > 0) {
+        if (train.cost <= funds && gameState.trainMarket[train.name]!!.remaining > 0) {
             funds -= train.cost
-            gameState.trainMarket[train.name]!!.remaining - 1
+            trains.add(gameState.trainMarket[train.name]!!.train)
             return true
         }
         return false
     }
 
     fun profit(amount: Int) {
-        funds += amount / 10 * 9
+        funds += ceil(amount / 10f * 9).toInt()
         val companyShares = gameState.shares.shares.values.filter { (company, _) -> equals(company) }
         for (share in companyShares) {
-            share.player.wealth += amount / 10 / companyShares.size
-            lastPayout = amount / 10 / companyShares.size
+            share.player.wealth += ceil(amount / 10f / companyShares.size).toInt()
+            lastPayout = ceil(amount / 10f / companyShares.size).toInt()
         }
 
         lastRecordedProfit = amount

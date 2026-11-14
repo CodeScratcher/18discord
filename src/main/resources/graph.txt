@@ -1,0 +1,60 @@
+Boston,4,1.5
+Albany,2,0.9
+New York,7,1.7
+Scranton,1,0.7
+Philadelphia,4,1.5
+Baltimore,4,1
+Richmond,3,0.8
+Blacksburg,2,0.6
+Charleston,3,0.6
+Atlanta,4,1.2
+Raleigh,3,0.9
+Cincinnati,3,0.7
+Louisville,2,0.7
+St Louis,3,1.1
+Indianapolis,2,0.9
+Chicago,5,1.6
+Toledo,2,0.8
+Cleveland,3,0.9
+Detroit,4,1.1
+Toronto,5,1.5
+Buffalo,3,1.3
+Pittsburgh,3,1.1
+Detroit,3,0.9
+Rochester,3,0.9
+EDGES
+Boston,Albany,1.3
+Boston,New York,1.1
+Albany,New York,1
+Albany,Rochester,1.4
+Albany,Buffalo,1.4
+Albany,Scranton,1.3
+Scranton,Buffalo,1.2
+Scranton,Rochester,1.2
+Rochester,Buffalo,1
+Rochester,Toronto,1
+Buffalo,Toronto,0.8
+Toronto,Detroit,1
+New York,Philadelphia,1
+Philadelphia,Baltimore,0.9
+Baltimore,Richmond,1.1
+Richmond,Raleigh,0.8
+Richmond,Blacksburg,1.1
+Blacksburg,Raleigh,1.2
+Buffalo,Pittsburgh,1.2
+Scranton,Pittsburgh,1.4
+Philadelphia,Pittsburgh,1.3
+Pittsburgh,Charleston,1.2
+Blacksburg,Charleston,1.2
+Charleston,Cincinnati,1.1
+Pittsburgh,Cleveland,1.1
+Cincinnati,Cleveland,1
+Pittsburgh,Toledo,1.2
+Cleveland,Toledo,0.9
+Toledo,Detroit,0.8
+Cincinnati,Indianapolis,1
+Cincinnati,Louisville,1
+Louisville,St Louis,0.8
+Indianapolis,St Louis,1.1
+Cincinnati,Toledo,1.2
+Indianapolis,Toledo,1.1
